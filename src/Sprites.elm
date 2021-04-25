@@ -20,7 +20,7 @@ module Sprites exposing
     , tileset
     )
 
-{-| Sprites for hero, enemies, and items.
+{-| Sprites for game scene and entities.
 -}
 
 import Direction exposing (Direction(..))

@@ -9,12 +9,13 @@ module Animation exposing
 import Playground exposing (Time)
 
 
+{-| Go from low to high value and start again.
+-}
 slide lo hi period time =
-    lo + (hi - lo) * (toFrac period time)
-    
+    lo + (hi - lo) * toFrac period time
 
 
-{-| A harsher version of Playground `zigzag`. It jumps from value1 to value2 periodically.
+{-| Abruptly jump from low to high value periodically.
 -}
 alternate lo hi period time =
     if abs (2 * toFrac period time - 1) > 0.5 then
