@@ -341,7 +341,12 @@ renderItem fn time entity =
 
 {-| Contact response logic.
 -}
-respond : Int -> Int -> ContactData -> { a | entities : Dict Int Entity, fx : Fx } -> { a | entities : Dict Int Entity, fx : Fx }
+respond :
+    Int
+    -> Int
+    -> ContactData
+    -> { a | entities : Dict Int Entity, collectedGems : Int, fx : Fx }
+    -> { a | entities : Dict Int Entity, collectedGems : Int, fx : Fx }
 respond id1 id2 contact memory =
     case ( Dict.get id1 memory.entities, Dict.get id2 memory.entities ) of
         ( Just entity1, Just entity2 ) ->
@@ -360,15 +365,16 @@ respond id1 id2 contact memory =
                 --         Hit _ ->
                 --             -- Don't hit again
                 --             memory
-
                 --         _ ->
                 --             memory
                 --                 |> setEntity (damagePlayer entity2.attackDamage entity2.p entity1)
                 --                 |> setFx Fx.flash
-
                 -- Pick up gem
                 ( Player, Gem ) ->
-                    pickUpItem entity1 entity2 memory
+                    { memory
+                        | collectedGems = memory.collectedGems + 1
+                    }
+                        |> pickUpItem entity1 entity2
 
                 -- Pick up cherry
                 ( Player, Cherry ) ->
@@ -385,16 +391,16 @@ hasStomped contact =
     contact.normal.y < -0.7 && contact.normal.y > -1.3
 
 
-pickUpItem entity1 entity2 memory =
+pickUpItem player_ item memory =
     let
-        newEntity1 =
-            { entity1
-                | points = entity1.points + entity2.points
+        newPlayer =
+            { player_
+                | points = player_.points + item.points
             }
     in
     memory
-        |> setEntity newEntity1
-        |> setEntity (remove entity2)
+        |> setEntity newPlayer
+        |> setEntity (remove item)
 
 
 {-| Figure out if player or enemy is attacking and apply damage accordingly.

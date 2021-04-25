@@ -29,10 +29,15 @@ config =
     }
 
 
+totalGems =
+    3
+
+
 type alias Memory =
     { level : Level
     , camera : Camera
     , entities : Dict Int Entity
+    , collectedGems : Int
     , nextId : Int
     , highScore : Int
     , debug : Bool
@@ -77,6 +82,7 @@ init level =
     { level = level
     , camera = findCameraPosition level.spawns
     , entities = entities
+    , collectedGems = 0
     , nextId = 100
     , highScore = 10000
     , debug = False
@@ -112,14 +118,12 @@ view computer ({ camera, entities, level } as memory) =
         sea =
             Sprites.sea
                 |> scale config.viewScale
-
     in
     case memory.status of
         Playing ->
             let
                 status =
                     renderStatus memory
-
 
                 forest =
                     -- Forest moves slower than camera
@@ -135,6 +139,7 @@ view computer ({ camera, entities, level } as memory) =
                         |> group
                         |> move (-camera.x * config.viewScale) -(camera.y * config.viewScale)
                         |> scale config.viewScale
+                
             in
             sky
                 :: sea
@@ -144,10 +149,11 @@ view computer ({ camera, entities, level } as memory) =
                 :: renderMask computer memory
                 :: renderFx computer memory
                 :: renderNotice memory
+                :: renderInventory memory
                 :: []
 
         Intro ->
-            let               
+            let
                 titles =
                     renderTitles computer
                         |> scale config.viewScale
@@ -225,14 +231,14 @@ renderStatus memory =
         Just player ->
             [ -- First column
               renderHealth (max 0 player.health)
-                |> moveLeft (config.viewWidth / 2 - 100)
+                |> moveLeft (config.viewWidth * 0.5 - 100)
 
             -- Second column
             , renderText white ("Score " ++ String.padLeft 5 '0' (String.fromInt player.points))
 
             -- Third column
             , renderText yellow ("High " ++ String.padLeft 5 '0' (String.fromInt memory.highScore))
-                |> moveRight (config.viewWidth / 2 - 135)
+                |> moveRight (config.viewWidth * 0.5 - 135)
             ]
 
         --|> Diagnostic.consIf memory.debug (Diagnostic.entity player)
@@ -240,7 +246,25 @@ renderStatus memory =
             []
     )
         |> group
-        |> moveUp (config.viewHeight / 2 - 30)
+        |> moveUp (config.viewHeight * 0.5 - 30)
+
+
+renderInventory memory =
+    List.range 1 totalGems
+        |> List.map
+            (\index ->
+                (if memory.collectedGems >= index then
+                    Sprites.gemStill
+
+                 else
+                    Sprites.gemEmpty
+                )
+                    |> moveRight (toFloat index * 14)
+            )
+        |> group
+        |> moveLeft (config.viewWidth * 0.5 - 15)
+        |> moveDown (config.viewHeight * 0.5 - 40)
+        |> scale config.viewScale
 
 
 {-| Draw a line of text with a solid shadow underneath.

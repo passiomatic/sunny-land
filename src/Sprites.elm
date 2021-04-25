@@ -5,6 +5,8 @@ module Sprites exposing
     , enemyDie
     , forest
     , gem
+    , gemEmpty
+    , gemStill
     , heroFall
     , heroHit
     , heroIdle
@@ -258,12 +260,12 @@ opossumWalk dir time =
 
 
 opossumWalkFrames =
-    ( sprite entities { xmin = 0, xmax = 35, ymin = 23, ymax = 50 }
-    , [ sprite entities { xmin = 38, xmax = 73, ymin = 23, ymax = 50 }
-      , sprite entities { xmin = 76, xmax = 111, ymin = 23, ymax = 50 }
-      , sprite entities { xmin = 114, xmax = 149, ymin = 23, ymax = 50 }
-      , sprite entities { xmin = 152, xmax = 187, ymin = 23, ymax = 50 }
-      , sprite entities { xmin = 190, xmax = 225, ymin = 23, ymax = 50 }
+    ( sprite entities { xmin = 23, xmax = 58, ymin = 23, ymax = 50 }
+    , [ sprite entities { xmin = 61, xmax = 96, ymin = 23, ymax = 50 }
+      , sprite entities { xmin = 99, xmax = 134, ymin = 23, ymax = 50 }
+      , sprite entities { xmin = 137, xmax = 172, ymin = 23, ymax = 50 }
+      , sprite entities { xmin = 175, xmax = 210, ymin = 23, ymax = 50 }
+      , sprite entities { xmin = 213, xmax = 248, ymin = 23, ymax = 50 }
       ]
     )
 
@@ -307,6 +309,16 @@ gem dir time =
         gemFrames
 
 
+gemEmpty =
+    sprite entities { xmin = 85, xmax = 99, ymin = 0, ymax = 12 }
+        |> Playground.move 0 -1
+
+
+gemStill =
+    sprite entities { xmin = 17, xmax = 31, ymin = 0, ymax = 12 }
+        |> Playground.move 0 -1
+
+
 gemFrames =
     ( sprite entities { xmin = 0, xmax = 14, ymin = 0, ymax = 12 }
     , [ sprite entities { xmin = 17, xmax = 31, ymin = 0, ymax = 12 }
@@ -330,13 +342,13 @@ cherry dir time =
 
 
 cherryFrames =
-    ( sprite entities { xmin = 85, xmax = 105, ymin = 0, ymax = 20 }
-    , [ sprite entities { xmin = 108, xmax = 128, ymin = 0, ymax = 20 }
-      , sprite entities { xmin = 131, xmax = 151, ymin = 0, ymax = 20 }
-      , sprite entities { xmin = 154, xmax = 174, ymin = 0, ymax = 20 }
-      , sprite entities { xmin = 177, xmax = 197, ymin = 0, ymax = 20 }
-      , sprite entities { xmin = 200, xmax = 220, ymin = 0, ymax = 20 }
-      , sprite entities { xmin = 223, xmax = 243, ymin = 0, ymax = 20 }
+    ( sprite entities { xmin = 102, xmax = 122, ymin = 0, ymax = 20 }
+    , [ sprite entities { xmin = 125, xmax = 145, ymin = 0, ymax = 20 }
+      , sprite entities { xmin = 148, xmax = 168, ymin = 0, ymax = 20 }
+      , sprite entities { xmin = 171, xmax = 191, ymin = 0, ymax = 20 }
+      , sprite entities { xmin = 194, xmax = 214, ymin = 0, ymax = 20 }
+      , sprite entities { xmin = 217, xmax = 237, ymin = 0, ymax = 20 }
+      , sprite entities { xmin = 0, xmax = 20, ymin = 23, ymax = 43 }
       ]
     )
 
