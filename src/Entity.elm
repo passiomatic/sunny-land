@@ -353,27 +353,18 @@ respond id1 id2 contact memory =
                             memory
 
                         _ ->
-                            if hasStomped contact then
-                                memory
-                                    |> setEntity (Physics.addImpulse (vec2 0 5.5) entity1)
-                                    |> setEntity (damageEnemy 0.5 entity2)
+                            resolveAttack entity1 entity2 contact memory
 
-                            else
-                                -- Hit by enemy
-                                memory
-                                    |> setEntity (damagePlayer entity2.attackDamage entity2.p entity1)
-                                    |> setFx Fx.flash
+                -- ( Player, Eagle ) ->
+                --     case entity1.status of
+                --         Hit _ ->
+                --             -- Don't hit again
+                --             memory
 
-                ( Player, Eagle ) ->
-                    case entity1.status of
-                        Hit _ ->
-                            -- Don't hit again
-                            memory
-
-                        _ ->
-                            memory
-                                |> setEntity (damagePlayer entity2.attackDamage entity2.p entity1)
-                                |> setFx Fx.flash
+                --         _ ->
+                --             memory
+                --                 |> setEntity (damagePlayer entity2.attackDamage entity2.p entity1)
+                --                 |> setFx Fx.flash
 
                 -- Pick up gem
                 ( Player, Gem ) ->
@@ -406,14 +397,54 @@ pickUpItem entity1 entity2 memory =
         |> setEntity (remove entity2)
 
 
+{-| Figure out if player or enemy is attacking and apply damage accordingly.
+-}
+resolveAttack player_ enemy contact memory =
+    if hasStomped contact then
+        let
+            newHealth =
+                enemy.health - player_.attackDamage
+
+            ( newPlayer, newEnemy ) =
+                if newHealth <= 0 then
+                    ( { player_
+                        | points = player_.points + enemy.points
+                      }
+                    , { enemy
+                        | status = Removing 600
+                        , contactTestBitMask = 0
+                        , a = Vec2.zero
+                      }
+                    )
+
+                else
+                    ( player_
+                    , { enemy
+                        | health = newHealth
+                        , status = Hit 400
+                      }
+                    )
+        in
+        memory
+            |> setEntity (Physics.addImpulse (vec2 0 5.5) newPlayer)
+            |> setEntity newEnemy
+
+    else
+        -- Hit by enemy
+        memory
+            |> setEntity (damagePlayer enemy.attackDamage enemy.p player_)
+            |> setFx Fx.flash
+
+
 damagePlayer : Float -> Vec2 -> Entity -> Entity
 damagePlayer value target entity =
     let
         -- Push player away from attacker
-        side = 
-            if (Vec2.sub target entity.p |> Vec2.getX) > 0 then 
-                -1 
-            else 
+        side =
+            if (Vec2.sub target entity.p |> Vec2.getX) > 0 then
+                -1
+
+            else
                 1
     in
     { entity
@@ -421,27 +452,7 @@ damagePlayer value target entity =
         , status = Hit 400
         , a = Vec2.zero
     }
-        |> Physics.addImpulse (vec2 (side * 3.5) 4.5 )
-
-
-damageEnemy : Float -> Entity -> Entity
-damageEnemy value entity =
-    let
-        health =
-            entity.health - value
-    in
-    if health <= 0 then
-        { entity
-            | status = Removing 600
-            , contactTestBitMask = 0
-            , a = Vec2.zero
-        }
-
-    else
-        { entity
-            | health = health
-            , status = Hit 400
-        }
+        |> Physics.addImpulse (vec2 (side * 3.5) 4.5)
 
 
 remove : Entity -> Entity
