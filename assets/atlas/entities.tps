@@ -258,6 +258,7 @@
             <key type="filename">../sprites/gem/gem-3.png</key>
             <key type="filename">../sprites/gem/gem-4.png</key>
             <key type="filename">../sprites/gem/gem-5.png</key>
+            <key type="filename">../sprites/gem/gem-6.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
