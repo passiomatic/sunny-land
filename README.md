@@ -8,7 +8,7 @@ Sunny Land is both a learning experiment and ongoing project to showcase Elm's [
 
 ## Goals
 
-It aims to have a farly complete feature set found in typical 80's platformers:
+It aims to have a fairly complete feature set found in typical 80's platformers:
 
 - A simple 2d physics engine
 - Different game entities: player, enemies and bonus items
@@ -18,13 +18,13 @@ It aims to have a farly complete feature set found in typical 80's platformers:
 
 ## Run locally
 
-Clone the repo and on the command line run Elm's `reactor` command:
+Clone the repo and on the command line run Elm's `reactor`:
 
 ```
 elm reactor
 ```
 
-And the point your browser to <http://localhost:8000/src/Main.elm>
+Then point your browser to <http://localhost:8000/src/Main.elm>
 
 ## How this thing works
 
