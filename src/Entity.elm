@@ -345,8 +345,8 @@ respond :
     Int
     -> Int
     -> ContactData
-    -> { a | entities : Dict Int Entity, collectedGems : Int, fx : Fx }
-    -> { a | entities : Dict Int Entity, collectedGems : Int, fx : Fx }
+    -> { a | entities : Dict Int Entity, score : Int, collectedGems : Int, fx : Fx }
+    -> { a | entities : Dict Int Entity, score : Int, collectedGems : Int, fx : Fx }
 respond id1 id2 contact memory =
     case ( Dict.get id1 memory.entities, Dict.get id2 memory.entities ) of
         ( Just entity1, Just entity2 ) ->
@@ -374,11 +374,12 @@ respond id1 id2 contact memory =
                     { memory
                         | collectedGems = memory.collectedGems + 1
                     }
-                        |> pickUpItem entity1 entity2
+                        |> pickUpItem entity2
 
                 -- Pick up cherry
                 ( Player, Cherry ) ->
-                    pickUpItem entity1 entity2 memory
+                    memory
+                        |> pickUpItem entity2
 
                 ( _, _ ) ->
                     memory
@@ -391,15 +392,10 @@ hasStomped contact =
     contact.normal.y < -0.7 && contact.normal.y > -1.3
 
 
-pickUpItem player_ item memory =
-    let
-        newPlayer =
-            { player_
-                | points = player_.points + item.points
-            }
-    in
-    memory
-        |> setEntity newPlayer
+pickUpItem item memory =
+    { memory
+        | score = memory.score + item.points
+    }
         |> setEntity (remove item)
 
 
@@ -411,28 +407,27 @@ resolveAttack player_ enemy contact memory =
             newHealth =
                 enemy.health - player_.attackDamage
 
-            ( newPlayer, newEnemy ) =
+            newPlayer =
+                Physics.addImpulse (vec2 0 5.5) player_
+
+            newEnemy =
                 if newHealth <= 0 then
-                    ( { player_
-                        | points = player_.points + enemy.points
-                      }
-                    , { enemy
+                    { enemy
                         | status = Removing 600
                         , contactTestBitMask = 0
                         , a = Vec2.zero
-                      }
-                    )
+                    }
 
                 else
-                    ( player_
-                    , { enemy
+                    { enemy
                         | health = newHealth
                         , status = Hit 400
-                      }
-                    )
+                    }
         in
-        memory
-            |> setEntity (Physics.addImpulse (vec2 0 5.5) newPlayer)
+        { memory
+            | score = memory.score + enemy.points
+        }
+            |> setEntity newPlayer
             |> setEntity newEnemy
 
     else

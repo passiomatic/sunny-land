@@ -34,11 +34,11 @@ totalGems =
 
 
 type alias Memory =
-    { level : Level
-    , camera : Camera
+    { camera : Camera
     , entities : Dict Int Entity
     , collectedGems : Int
     , nextId : Int
+    , score : Int
     , highScore : Int
     , debug : Bool
     , fx : Fx
@@ -65,7 +65,7 @@ type alias Spawn =
 
 type Status
     = Intro
-    | Playing
+    | Playing Level
 
 
 type Notice
@@ -75,39 +75,37 @@ type Notice
 
 init : Level -> Memory
 init level =
-    let
-        entities =
-            Entity.fromSpawns level.spawns
-    in
-    { level = level
-    , camera = findCameraPosition level.spawns
-    , entities = entities
+    { camera = Camera.init Vec2.zero
+    , entities = Dict.empty
     , collectedGems = 0
     , nextId = 100
+    , score = 0
     , highScore = 10000
     , debug = False
-    , fx = Fx.curtainOpen
-    , notice = Notice "Level 1. Ready!" 2000
+    , fx = None
+    , notice = Empty
     , status = Intro
     }
 
 
+changeLevel : Level -> Memory -> Memory
+changeLevel level memory =
+    { memory
+        | camera = findCameraPosition level.spawns
+        , entities = Entity.fromSpawns level.spawns
+        , collectedGems = 0
+        , fx = Fx.curtainOpen
+        , notice = Notice "Level 1. Ready!" 2000
+        , status = Playing level
+    }
 
--- changeLevel : Level -> Memory -> Memory
--- changeLevel level memory =
---     { memory |
---       level = level
---     , camera = findCameraPosition level.spawns
---     , entities = Entity.fromSpawns level.spawns
---     , fx = Fx.curtainOpen
---     , notice = Notice "Level 1. Ready!" 2000
---     , status = Playing
---     }
+
+
 -- VIEW
 
 
 view : Computer -> Memory -> List Shape
-view computer ({ camera, entities, level } as memory) =
+view computer ({ debug, camera, entities } as memory) =
     let
         sky =
             -- Sky moves slower than camera
@@ -120,7 +118,7 @@ view computer ({ camera, entities, level } as memory) =
                 |> scale config.viewScale
     in
     case memory.status of
-        Playing ->
+        Playing level ->
             let
                 status =
                     renderStatus memory
@@ -134,12 +132,11 @@ view computer ({ camera, entities, level } as memory) =
 
                 world =
                     renderWorld level
-                        :: renderPhysicsGeometry memory
+                        :: renderPhysicsGeometry debug level.walls entities
                         :: Entity.render computer.time entities
                         |> group
                         |> move (-camera.x * config.viewScale) -(camera.y * config.viewScale)
                         |> scale config.viewScale
-                
             in
             sky
                 :: sea
@@ -234,10 +231,10 @@ renderStatus memory =
                 |> moveLeft (config.viewWidth * 0.5 - 100)
 
             -- Second column
-            , renderText white ("Score " ++ String.padLeft 5 '0' (String.fromInt player.points))
+            , renderText white ("Score " ++ String.padLeft 5 '0' (String.fromInt memory.score))
 
             -- Third column
-            , renderText yellow ("High " ++ String.padLeft 5 '0' (String.fromInt memory.highScore))
+            , renderText yellow ("High " ++ String.padLeft 5 '0' (String.fromInt (max memory.score memory.highScore)))
                 |> moveRight (config.viewWidth * 0.5 - 135)
             ]
 
@@ -331,17 +328,17 @@ renderTitles computer =
         |> moveUp 120
 
 
-renderPhysicsGeometry memory =
-    (if memory.debug then
+renderPhysicsGeometry debug walls entities =
+    (if debug then
         let
-            walls =
-                List.map Diagnostic.wall memory.level.walls
+            walls_ =
+                List.map Diagnostic.wall walls
 
-            entities =
-                Dict.map (\_ entity -> Diagnostic.body entity) memory.entities
+            entities_ =
+                Dict.map (\_ entity -> Diagnostic.body entity) entities
                     |> Dict.values
         in
-        List.append entities walls
+        List.append entities_ walls_
 
      else
         []
@@ -379,10 +376,10 @@ update computer memory =
             toFloat computer.time.delta / 1000
     in
     case memory.status of
-        Playing ->
+        Playing level ->
             memory
                 |> Entity.update computer config
-                |> simulate dt
+                |> simulate dt level.walls
                 |> updateCamera dt
                 |> updateFx computer
                 |> updateNotice computer
@@ -390,7 +387,7 @@ update computer memory =
         Intro ->
             if computer.keyboard.enter then
                 -- Start game
-                { memory | status = Playing }
+                changeLevel Levels.level1 memory
 
             else
                 memory
@@ -453,12 +450,13 @@ updateNotice computer memory =
 -}
 simulate :
     Float
+    -> List Wall
     -> Memory
     -> Memory
-simulate dt memory =
+simulate dt walls memory =
     let
         ( entities, contacts ) =
-            Physics.step config dt memory.level.walls memory.entities
+            Physics.step config dt walls memory.entities
     in
     List.foldl
         (\contact memoryAccum ->
