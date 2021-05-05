@@ -1,8 +1,10 @@
 module Entity exposing
     ( Entity
+    , EntityStatus(..)
     , EntityType(..)
-    , Status(..)
+    , Spawn
     , fromSpawns
+    , isWaiting
     , player
     , render
     , respond
@@ -22,20 +24,6 @@ import Sprites
 import Vector2.Extra as Vec2
 
 
-type EntityType
-    = Eagle
-    | Opossum
-    | Player
-    | Gem
-    | Cherry
-
-
-type Status
-    = Normal
-    | Hit Int
-    | Removing Int
-
-
 type alias Entity =
     { id : Int
     , p : Vec2
@@ -51,62 +39,97 @@ type alias Entity =
     , categoryBitMask : Int
     , dir : Direction
     , type_ : EntityType
-    , status : Status
+    , status : EntityStatus
     , health : Float
     , attackDamage : Float
     , points : Int
+    , spawn : Spawn
     }
 
 
-defaultEntity =
-    { id = 1 -- Reserve 0 for player
-    , p = Vec2.zero
-    , v = Vec2.zero
-    , a = Vec2.zero
-    , cumulativeImpulse = Vec2.zero
-    , cumulativeContact = Vec2.zero
-    , radius = 10
-    , restitution = 1.0
-    , affectedByGravity = True
-    , affectedByContact = True
-    , contactTestBitMask = 0
-    , categoryBitMask = 0
-    , dir = Neither
-    , type_ = Player
-    , status = Normal
-    , health = 0
-    , attackDamage = 0
-    , points = 0
+type EntityType
+    = Eagle
+    | Opossum
+    | Player
+    | Gem
+    | Cherry
+
+
+type EntityStatus
+    = Normal
+    | Hit Int
+    | Removing Int
+    | Waiting Int
+    | Spawning Int
+
+
+{-| Spawn point for a game entity.
+-}
+type alias Spawn =
+    { p : Vec2
+    , dir : Direction
+    , type_ : EntityType
     }
 
 
-fromSpawns : List { p : Vec2, dir : Direction, type_ : EntityType } -> Dict Int Entity
+fromSpawns : List Spawn -> Dict Int Entity
 fromSpawns spawns =
     List.indexedMap
-        (\id spawn ->
-            let
-                nextId =
-                    id + 1
-            in
-            case spawn.type_ of
-                Player ->
-                    -- Hardcode id=0 for player
-                    ( 0, spawnPlayer spawn.p spawn.dir 0 )
-
-                Eagle ->
-                    ( nextId, spawnEagle spawn.p spawn.dir nextId )
-
-                Opossum ->
-                    ( nextId, spawnOpossum spawn.p spawn.dir nextId )
-
-                Gem ->
-                    ( nextId, spawnItemAt spawn nextId )
-
-                Cherry ->
-                    ( nextId, spawnCherry spawn nextId )
+        (\index spawn_ ->
+            spawn spawn_ (index + 1)
         )
         spawns
         |> Dict.fromList
+
+
+spawn =
+    spawnHelp Normal
+
+
+spawnAfter timeout =
+    spawnHelp (Waiting timeout)
+
+
+spawnHelp : EntityStatus -> Spawn -> Int -> ( Int, Entity )
+spawnHelp status spawn_ nextId =
+    let
+        entity =
+            { id = nextId
+            , p = spawn_.p
+            , v = Vec2.zero
+            , a = Vec2.zero
+            , cumulativeImpulse = Vec2.zero
+            , cumulativeContact = Vec2.zero
+            , radius = 10
+            , restitution = 1.0
+            , affectedByGravity = True
+            , affectedByContact = True
+            , contactTestBitMask = 0
+            , categoryBitMask = 0
+            , dir = spawn_.dir
+            , type_ = spawn_.type_
+            , status = status
+            , health = 0
+            , attackDamage = 0
+            , points = 0
+            , spawn = spawn_
+            }
+    in
+    case spawn_.type_ of
+        Player ->
+            ( 0, initPlayer entity )
+
+        Eagle ->
+            ( nextId, initEagle entity )
+
+        Opossum ->
+            ( nextId, initOpossum entity )
+
+        Gem ->
+            ( nextId, initGem entity )
+
+        Cherry ->
+            ( nextId, initCherry entity )
 
 
 render : Time -> Dict Int Entity -> List Shape
@@ -158,18 +181,15 @@ player entities =
     Dict.get 0 entities
 
 
-spawnPlayer : Vec2 -> Direction -> Int -> Entity
-spawnPlayer position dir id =
-    { defaultEntity
-        | id = id
-        , p = position
+initPlayer : Entity -> Entity
+initPlayer entity =
+    { entity
+        | id = 0 -- Hardcode value for player
         , contactTestBitMask = enemyCategory + itemCategory
         , categoryBitMask = playerCategory
         , radius = 13
-        , dir = dir
         , health = 1.0
         , attackDamage = 0.5
-        , type_ = Player
     }
 
 
@@ -201,7 +221,6 @@ renderPlayer time entity =
                         -- Idle
                         Sprites.heroIdle entity.dir time
     in
-    --Playground.move (pxSnap entity.p.x) (pxSnap entity.p.y) sprite
     Playground.move entity.p.x entity.p.y sprite
 
 
@@ -213,19 +232,15 @@ enemyCategory =
     2
 
 
-spawnOpossum : Vec2 -> Direction -> Int -> Entity
-spawnOpossum position dir id =
-    { defaultEntity
-        | id = id
-        , p = position
-        , contactTestBitMask = playerCategory
+initOpossum : Entity -> Entity
+initOpossum entity =
+    { entity
+        | contactTestBitMask = playerCategory
         , categoryBitMask = enemyCategory
         , radius = 15
-        , dir = dir
         , health = 0.4
         , attackDamage = 0.2
         , points = 200
-        , type_ = Opossum
     }
 
 
@@ -237,26 +252,25 @@ renderOpossum time entity =
                 Removing _ ->
                     Sprites.enemyDie entity.dir time
 
+                Spawning _ ->
+                    Sprites.enemySpawn entity.dir time
+
                 _ ->
                     Sprites.opossumWalk entity.dir time
     in
     Playground.move entity.p.x entity.p.y sprite
 
 
-spawnEagle : Vec2 -> Direction -> Int -> Entity
-spawnEagle position dir id =
-    { defaultEntity
-        | id = id
-        , p = position
-        , affectedByGravity = False
+initEagle : Entity -> Entity
+initEagle entity =
+    { entity
+        | affectedByGravity = False
         , contactTestBitMask = playerCategory
         , categoryBitMask = enemyCategory
         , radius = 15
-        , dir = dir
         , health = 0.7
         , attackDamage = 0.4
         , points = 500
-        , type_ = Eagle
     }
 
 
@@ -267,6 +281,9 @@ renderEagle time entity =
             case entity.status of
                 Removing _ ->
                     Sprites.enemyDie entity.dir time
+
+                Spawning _ ->
+                    Sprites.enemySpawn entity.dir time
 
                 _ ->
                     Sprites.eagleIdle entity.dir time
@@ -282,16 +299,12 @@ itemCategory =
     4
 
 
-spawnItemAt : { a | p : Vec2, dir : Direction } -> Int -> Entity
-spawnItemAt spawn id =
-    { defaultEntity
-        | id = id
-        , p = spawn.p
-        , contactTestBitMask = playerCategory
+initGem : Entity -> Entity
+initGem entity =
+    { entity
+        | contactTestBitMask = playerCategory
         , categoryBitMask = itemCategory
         , radius = 7
-        , type_ = Gem
-        , status = Normal
         , points = 1000
         , affectedByGravity = False
         , affectedByContact = False
@@ -302,15 +315,12 @@ renderGem =
     renderItem Sprites.gem
 
 
-spawnCherry : { a | p : Vec2, dir : Direction } -> Int -> Entity
-spawnCherry spawn id =
-    { defaultEntity
-        | id = id
-        , p = spawn.p
-        , contactTestBitMask = playerCategory
+initCherry : Entity -> Entity
+initCherry entity =
+    { entity
+        | contactTestBitMask = playerCategory
         , categoryBitMask = itemCategory
         , radius = 9
-        , type_ = Cherry
         , points = 150
         , affectedByGravity = False
         , affectedByContact = False
@@ -596,6 +606,42 @@ update { keyboard, time } config memory =
                                 -- Done, remove from world
                                 accum
 
+                        ( _, Waiting timeout ) ->
+                            let
+                                remaining =
+                                    timeout - time.delta
+
+                                newStatus =
+                                    if remaining > 0 then
+                                        Waiting remaining
+
+                                    else
+                                        Spawning 600
+                            in
+                            Dict.insert id
+                                { entity
+                                    | status = newStatus
+                                }
+                                accum
+
+                        ( _, Spawning timeout ) ->
+                            let
+                                remaining =
+                                    timeout - time.delta
+
+                                newStatus =
+                                    if remaining > 0 then
+                                        Spawning remaining
+
+                                    else
+                                        Normal
+                            in
+                            Dict.insert id
+                                { entity
+                                    | status = newStatus
+                                }
+                                accum
+
                         ( _, _ ) ->
                             -- Leave entity as-is
                             Dict.insert id entity accum
@@ -607,6 +653,16 @@ update { keyboard, time } config memory =
 
 
 -- HELPERS
+
+
+isWaiting : Entity -> Bool
+isWaiting entity =
+    case entity.status of
+        Waiting _ ->
+            True
+
+        _ ->
+            False
 
 
 {-| Figure out entity direction from keyboard status

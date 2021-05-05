@@ -7,7 +7,7 @@ import Diagnostic
 import Dict exposing (Dict)
 import Direction exposing (Direction(..))
 import Ease exposing (Easing)
-import Entity exposing (Entity, EntityType(..), Status(..), player)
+import Entity exposing (Entity, EntityType(..), Spawn)
 import Fx exposing (Fx(..))
 import Levels
 import Physics exposing (Contact(..), Wall)
@@ -51,15 +51,6 @@ type alias Level =
     { data : String
     , spawns : List Spawn
     , walls : List Wall
-    }
-
-
-{-| Spawn point for a game entity.
--}
-type alias Spawn =
-    { p : Vec2
-    , dir : Direction
-    , type_ : EntityType
     }
 
 

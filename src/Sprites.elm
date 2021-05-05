@@ -19,7 +19,8 @@ module Sprites exposing
     , pressEnterText
     , sea
     , sky
-    , tileset
+    , spawnFrames
+    , tileset, enemySpawn
     )
 
 {-| Sprites for game scene and entities.
@@ -289,6 +290,29 @@ deathFrames =
       , sprite entities { xmin = 126, xmax = 165, ymin = 275, ymax = 315 }
       , sprite entities { xmin = 168, xmax = 207, ymin = 275, ymax = 315 }
       , sprite entities { xmin = 210, xmax = 249, ymin = 275, ymax = 315 }
+      ]
+    )
+
+
+enemySpawn : Direction -> Time -> Shape
+enemySpawn dir time =
+    spriteFrame dir
+        time
+        { frameDuration = 100
+        , frameCount = 6
+        , offset = ( 0, 0 )
+        , side = Neither
+        }
+        spawnFrames
+
+
+spawnFrames =
+    ( sprite entities { xmin = 210, xmax = 249, ymin = 275, ymax = 315 }
+    , [ sprite entities { xmin = 168, xmax = 207, ymin = 275, ymax = 315 }
+      , sprite entities { xmin = 126, xmax = 165, ymin = 275, ymax = 315 }
+      , sprite entities { xmin = 84, xmax = 123, ymin = 275, ymax = 315 }
+      , sprite entities { xmin = 42, xmax = 81, ymin = 275, ymax = 315 }
+      , sprite entities { xmin = 0, xmax = 39, ymin = 275, ymax = 315 }
       ]
     )
 
