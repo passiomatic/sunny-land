@@ -13,8 +13,8 @@ It aims to have a fairly complete feature set found in typical 80's platformers:
 - A simple 2d physics engine
 - Different game entities: player, enemies and bonus items
 - Whole screen graphic FX
+- Enemy respawn logic
 - Multiple levels (to-do)
-- Respawn logic (to-do)
 
 ## Run locally
 

@@ -3,6 +3,7 @@ module Sprites exposing
     , creditsText
     , eagleIdle
     , enemyDie
+    , enemySpawn
     , forest
     , gem
     , gemEmpty
@@ -20,7 +21,7 @@ module Sprites exposing
     , sea
     , sky
     , spawnFrames
-    , tileset, enemySpawn
+    , tileset
     )
 
 {-| Sprites for game scene and entities.

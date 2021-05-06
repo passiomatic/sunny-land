@@ -37,7 +37,6 @@ type alias Memory =
     { camera : Camera
     , entities : Dict Int Entity
     , collectedGems : Int
-    , nextId : Int
     , score : Int
     , highScore : Int
     , debug : Bool
@@ -69,7 +68,6 @@ init level =
     { camera = Camera.init Vec2.zero
     , entities = Dict.empty
     , collectedGems = 0
-    , nextId = 100
     , score = 0
     , highScore = 10000
     , debug = False
@@ -446,8 +444,12 @@ simulate :
     -> Memory
 simulate dt walls memory =
     let
-        ( entities, contacts ) =
-            Physics.step config dt walls memory.entities
+        -- Skip simulation for entities not ready yet
+        (readyEntities, notReadyEntities ) = 
+            Dict.partition (\_ entity -> Entity.isReady entity) memory.entities 
+
+        ( newEntities, contacts ) =            
+            Physics.step config dt walls readyEntities
     in
     List.foldl
         (\contact memoryAccum ->
@@ -459,7 +461,7 @@ simulate dt walls memory =
                     -- Ignore wall contacts
                     memoryAccum
         )
-        { memory | entities = entities }
+        { memory | entities = Dict.union newEntities notReadyEntities }
         contacts
 
 

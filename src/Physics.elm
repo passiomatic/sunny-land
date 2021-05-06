@@ -70,7 +70,7 @@ step :
     -> ( Dict Int (PhysicsBody a), List (Contact a) )
 step config dt walls bodies =
     let
-        newEntries =
+        newBodies =
             Dict.map (\_ body -> integrate config dt body) bodies
 
         contacts =
@@ -78,12 +78,12 @@ step config dt walls bodies =
                 (\_ body accum ->
                     accum
                         |> computeContactWithWalls body walls
-                        |> computeContactWithEntities body newEntries
+                        |> computeContactWithEntities body newBodies
                 )
                 []
-                newEntries
+                newBodies
     in
-    ( resolveContacts contacts newEntries, contacts )
+    ( resolveContacts contacts newBodies, contacts )
 
 
 integrate : { b | friction : Vec2, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a

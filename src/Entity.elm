@@ -4,7 +4,7 @@ module Entity exposing
     , EntityType(..)
     , Spawn
     , fromSpawns
-    , isWaiting
+    , isReady
     , player
     , render
     , respond
@@ -198,9 +198,8 @@ renderPlayer time entity =
     let
         sprite =
             case entity.status of
-                Removing _ ->
-                    Sprites.heroHit entity.dir time
-
+                -- Removing _ ->
+                --     Sprites.heroHit entity.dir time
                 Hit _ ->
                     Sprites.heroHit entity.dir time
 
@@ -249,6 +248,9 @@ renderOpossum time entity =
     let
         sprite =
             case entity.status of
+                Waiting _ ->
+                    none
+
                 Removing _ ->
                     Sprites.enemyDie entity.dir time
 
@@ -602,6 +604,14 @@ update { keyboard, time } config memory =
                                     }
                                     accum
 
+                            else if entity.type_ == Opossum then
+                                let
+                                    -- Respawn after timeout
+                                    ( _, newEntity ) =
+                                        spawnAfter 8000 entity.spawn entity.id
+                                in
+                                Dict.insert id newEntity accum
+
                             else
                                 -- Done, remove from world
                                 accum
@@ -655,14 +665,24 @@ update { keyboard, time } config memory =
 -- HELPERS
 
 
-isWaiting : Entity -> Bool
-isWaiting entity =
+none : Shape
+none =
+    Playground.group []
+
+
+{-| Is entity ready for simulation?
+-}
+isReady : Entity -> Bool
+isReady entity =
     case entity.status of
         Waiting _ ->
-            True
+            False
+
+        Spawning _ ->
+            False
 
         _ ->
-            False
+            True
 
 
 {-| Figure out entity direction from keyboard status
