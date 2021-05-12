@@ -129,7 +129,10 @@ resolveContacts contacts bodies =
                         Just body ->
                             let
                                 newBody =
-                                    resolveBodyVsWallContact contact_ body
+                                    if body.affectedByContact then
+                                        resolveBodyVsWallContact contact_ body
+                                    else 
+                                        body 
                             in
                             accum
                                 |> Dict.insert id newBody

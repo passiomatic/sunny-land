@@ -4,8 +4,8 @@ module Entity exposing
     , EntityType(..)
     , Spawn
     , fromSpawns
+    , getPlayer
     , isReady
-    , player
     , render
     , respond
     , update
@@ -176,8 +176,8 @@ playerCategory =
     1
 
 
-player : Dict Int Entity -> Maybe Entity
-player entities =
+getPlayer : Dict Int Entity -> Maybe Entity
+getPlayer entities =
     Dict.get 0 entities
 
 
@@ -198,8 +198,10 @@ renderPlayer time entity =
     let
         sprite =
             case entity.status of
-                -- Removing _ ->
-                --     Sprites.heroHit entity.dir time
+                Removing _ ->
+                    -- Reuse hit sprites
+                    Sprites.heroHit entity.dir time
+
                 Hit _ ->
                     Sprites.heroHit entity.dir time
 
@@ -413,27 +415,27 @@ pickUpItem item memory =
 
 {-| Figure out if player or enemy is attacking and apply damage accordingly.
 -}
-resolveAttack player_ enemy contact memory =
+resolveAttack player enemy contact memory =
     if hasStomped contact then
         let
             newHealth =
-                enemy.health - player_.attackDamage
+                enemy.health - player.attackDamage
 
             newPlayer =
-                Physics.addImpulse (vec2 0 5.5) player_
+                Physics.addImpulse (vec2 0 5.5) player
 
             newEnemy =
-                if newHealth <= 0 then
+                if newHealth > 0.1 then
                     { enemy
-                        | status = Removing 600
-                        , contactTestBitMask = 0
-                        , a = Vec2.zero
+                        | health = newHealth
+                        , status = Hit 400
                     }
 
                 else
                     { enemy
-                        | health = newHealth
-                        , status = Hit 400
+                        | status = Removing 600
+                        , contactTestBitMask = 0
+                        , a = Vec2.zero
                     }
         in
         { memory
@@ -445,26 +447,42 @@ resolveAttack player_ enemy contact memory =
     else
         -- Hit by enemy
         memory
-            |> setEntity (damagePlayer enemy.attackDamage enemy.p player_)
+            |> setEntity (damagePlayer enemy.attackDamage enemy.p player)
             |> setFx Fx.flash
 
 
 damagePlayer : Float -> Vec2 -> Entity -> Entity
-damagePlayer value target entity =
+damagePlayer value target player =
     let
-        -- Push player away from attacker
+        newHealth =
+            player.health - value
+
+        -- Target position relative to player
         side =
-            if (Vec2.sub target entity.p |> Vec2.getX) > 0 then
+            if (Vec2.sub target player.p |> Vec2.getX) > 0 then
                 -1
 
             else
                 1
+
+        newPlayer =
+            if newHealth > 0.01 then
+                { player
+                    | health = newHealth
+                    , status = Hit 400
+                    , a = Vec2.zero
+                }
+
+            else
+                { player
+                    | health = newHealth
+                    , status = Removing 9999
+                    , a = Vec2.zero
+                    , affectedByContact = False
+                }
     in
-    { entity
-        | health = entity.health - value
-        , status = Hit 400
-        , a = Vec2.zero
-    }
+    -- Push player away from attacker
+    newPlayer
         |> Physics.addImpulse (vec2 (side * 3.5) 4.5)
 
 
@@ -536,24 +554,6 @@ update { keyboard, time } config memory =
                         -- ########
                         -- Player
                         -- ########
-                        ( Player, Hit timeout ) ->
-                            let
-                                remaining =
-                                    timeout - time.delta
-
-                                status =
-                                    if remaining > 0 then
-                                        Hit remaining
-
-                                    else
-                                        Normal
-                            in
-                            Dict.insert id
-                                { entity
-                                    | status = status
-                                }
-                                accum
-
                         ( Player, Normal ) ->
                             let
                                 dir =
@@ -577,9 +577,6 @@ update { keyboard, time } config memory =
                                     else
                                         -- On air, don't jump again
                                         ( vec2 ax 0, entity.v )
-
-                                -- else
-                                --     ( vec2 ax entity.a.y, entity.v )
                             in
                             Dict.insert id
                                 { entity
@@ -588,6 +585,17 @@ update { keyboard, time } config memory =
                                     , dir = dir
                                 }
                                 accum
+
+                        ( Player, Hit timeout ) ->
+                            let
+                                remaining =
+                                    timeout - time.delta
+                            in
+                            changeStatus remaining (Hit remaining) Normal entity accum
+
+                        ( Player, Removing timeout ) ->
+                            -- Never move from Removing status, game is over
+                            Dict.insert id entity accum
 
                         -- ########
                         -- All entities
@@ -620,37 +628,15 @@ update { keyboard, time } config memory =
                             let
                                 remaining =
                                     timeout - time.delta
-
-                                newStatus =
-                                    if remaining > 0 then
-                                        Waiting remaining
-
-                                    else
-                                        Spawning 600
                             in
-                            Dict.insert id
-                                { entity
-                                    | status = newStatus
-                                }
-                                accum
+                            changeStatus remaining (Waiting remaining) (Spawning 600) entity accum
 
                         ( _, Spawning timeout ) ->
                             let
                                 remaining =
                                     timeout - time.delta
-
-                                newStatus =
-                                    if remaining > 0 then
-                                        Spawning remaining
-
-                                    else
-                                        Normal
                             in
-                            Dict.insert id
-                                { entity
-                                    | status = newStatus
-                                }
-                                accum
+                            changeStatus remaining (Spawning remaining) Normal entity accum
 
                         ( _, _ ) ->
                             -- Leave entity as-is
@@ -659,6 +645,22 @@ update { keyboard, time } config memory =
                 Dict.empty
                 memory.entities
     }
+
+
+changeStatus remaining current next entity accum =
+    let
+        newStatus =
+            if remaining > 0 then
+                current
+
+            else
+                next
+    in
+    Dict.insert entity.id
+        { entity
+            | status = newStatus
+        }
+        accum
 
 
 

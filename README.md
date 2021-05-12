@@ -14,6 +14,7 @@ It aims to have a fairly complete feature set found in typical 80's platformers:
 - Different game entities: player, enemies and bonus items
 - Whole screen graphic FX
 - Enemy respawn logic
+- Game over screen (to-do)
 - Multiple levels (to-do)
 
 ## Run locally

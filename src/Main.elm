@@ -7,7 +7,7 @@ import Diagnostic
 import Dict exposing (Dict)
 import Direction exposing (Direction(..))
 import Ease exposing (Easing)
-import Entity exposing (Entity, EntityType(..), Spawn)
+import Entity exposing (Entity, EntityStatus(..), EntityType(..), Spawn)
 import Fx exposing (Fx(..))
 import Levels
 import Physics exposing (Contact(..), Wall)
@@ -213,7 +213,7 @@ renderMask computer memory =
 -}
 renderStatus : Memory -> Shape
 renderStatus memory =
-    (case Entity.player memory.entities of
+    (case Entity.getPlayer memory.entities of
         Just player ->
             [ -- First column
               renderHealth (max 0 player.health)
@@ -445,10 +445,10 @@ simulate :
 simulate dt walls memory =
     let
         -- Skip simulation for entities not ready yet
-        (readyEntities, notReadyEntities ) = 
-            Dict.partition (\_ entity -> Entity.isReady entity) memory.entities 
+        ( readyEntities, notReadyEntities ) =
+            Dict.partition (\_ entity -> Entity.isReady entity) memory.entities
 
-        ( newEntities, contacts ) =            
+        ( newEntities, contacts ) =
             Physics.step config dt walls readyEntities
     in
     List.foldl
@@ -469,13 +469,19 @@ updateCamera : Float -> Memory -> Memory
 updateCamera dt memory =
     let
         maybePlayer =
-            Entity.player memory.entities
+            Entity.getPlayer memory.entities
     in
     case maybePlayer of
         Just player ->
-            { memory
-                | camera = Camera.follow config dt player.p memory.camera
-            }
+            case player.status of
+                Removing _ ->
+                    -- Player will fall offscreen, don't follow
+                    memory
+
+                _ ->
+                    { memory
+                        | camera = Camera.follow config dt player.p memory.camera
+                    }
 
         Nothing ->
             memory
