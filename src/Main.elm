@@ -56,6 +56,7 @@ type alias Level =
 type Status
     = Intro
     | Playing Level
+    | EndLevel Level Int
 
 
 type Notice
@@ -110,7 +111,7 @@ view computer ({ debug, camera, entities } as memory) =
         Playing level ->
             let
                 status =
-                    renderStatus memory
+                    renderStatusBar memory
 
                 forest =
                     -- Forest moves slower than camera
@@ -138,6 +139,25 @@ view computer ({ debug, camera, entities } as memory) =
                 :: renderInventory memory
                 :: []
 
+        EndLevel level timeout ->
+            let
+                status =
+                        renderStatusBar memory
+                world =
+                    renderPhysicsGeometry debug level.walls entities
+                        :: rectangle config.background computer.screen.width computer.screen.height
+                        :: Entity.render computer.time entities
+                        |> group
+                        |> move (-camera.x * config.viewScale) -(camera.y * config.viewScale)
+                        |> scale config.viewScale            
+            in
+                world
+                    :: status
+                    :: renderMask computer memory
+                    :: renderFx computer memory
+                    :: renderNotice memory
+                    :: []
+                            
         Intro ->
             let
                 titles =
@@ -209,10 +229,10 @@ renderMask computer memory =
         |> group
 
 
-{-| Draw a game status header.
+{-| Draw a game status bar header.
 -}
-renderStatus : Memory -> Shape
-renderStatus memory =
+renderStatusBar : Memory -> Shape
+renderStatusBar memory =
     (case Entity.getPlayer memory.entities of
         Just player ->
             [ -- First column
@@ -372,6 +392,22 @@ update computer memory =
                 |> updateCamera dt
                 |> updateFx computer
                 |> updateNotice computer
+                |> checkForEndLevel
+
+        EndLevel level timeout ->
+            let
+                remaining =
+                        timeout - computer.time.delta
+            in
+            if remaining > 0 then 
+                memory
+                    |> setStatus (EndLevel level remaining)
+                    |> Entity.update computer config
+                    |> simulate dt level.walls
+                    |> updateCamera dt
+                    |> updateNotice computer
+            else 
+                changeLevel Levels.level1 memory 
 
         Intro ->
             if computer.keyboard.enter then
@@ -434,6 +470,40 @@ updateNotice computer memory =
                     Empty
     }
 
+{-| Check for the two end level scenarios: 
+    
+    1. player collected all the gems
+    2. player got killed by enemy
+-}
+checkForEndLevel memory = 
+    case Entity.getPlayer memory.entities of
+        Just player ->
+            case player.status of
+                Normal ->
+                    if memory.collectedGems == totalGems then
+                        -- Player won, show end level graphics                        
+                        { memory | 
+                            notice = Notice "Level 1 cleared!" 2000
+                        }
+                            |> setStatus (EndLevel Levels.level1 4000)
+                    else 
+                        memory
+
+                Removing timeout ->
+                    if timeout > 0 then
+                        memory 
+                    else
+                        -- Player died, game over  
+                        { memory | score = 0 }      
+                            |> setStatus Intro
+                _ ->
+                    memory
+
+        Nothing ->
+            memory
+
+setStatus status memory = 
+    { memory | status = status } 
 
 {-| Simulate physics and respond to entity contacts.
 -}

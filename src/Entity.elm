@@ -474,9 +474,10 @@ damagePlayer value target player =
                 }
 
             else
+                -- Player is dead
                 { player
                     | health = newHealth
-                    , status = Removing 9999
+                    , status = Removing 3500
                     , a = Vec2.zero
                     , affectedByContact = False
                 }
@@ -594,11 +595,15 @@ update { keyboard, time } config memory =
                             changeStatus remaining (Hit remaining) Normal entity accum
 
                         ( Player, Removing timeout ) ->
-                            -- Never move from Removing status, game is over
-                            Dict.insert id entity accum
+                            let
+                                remaining =
+                                    timeout - time.delta
+                            in
+                            -- Keep player in removing state as we check for end game
+                            Dict.insert id { entity | status = Removing remaining } accum
 
                         -- ########
-                        -- All entities
+                        -- Other entities
                         -- ########
                         ( _, Removing timeout ) ->
                             let
