@@ -163,13 +163,13 @@ render time entities =
 {-| Player acceleration on ground.
 -}
 playerAcceleration =
-    0.29
+    180
 
 
 {-| Player jump vertical thrust.
 -}
 playerJump =
-    6.3
+    200
 
 
 playerCategory =
@@ -537,10 +537,10 @@ update { keyboard, time } config memory =
                                 ax =
                                     case newDir of
                                         East ->
-                                            0.11
+                                            90
 
                                         West ->
-                                            -0.11
+                                            -90
 
                                         _ ->
                                             0

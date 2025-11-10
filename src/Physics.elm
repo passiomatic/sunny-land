@@ -86,10 +86,13 @@ step config dt walls bodies =
     ( resolveContacts contacts newBodies, contacts )
 
 
+fixedDeltaTime =
+    1 / 60
+
+
 integrate : { b | friction : Vec2, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
     let
-        -- TODO integrate with dt
         a =
             body.a
                 |> Vec2.add body.cumulativeImpulse
@@ -99,13 +102,16 @@ integrate config dt body =
                     else
                         Vec2.add Vec2.zero
                    )
+
+        v =
+            Vec2.scale (min fixedDeltaTime dt) body.v
     in
     { body
-        | p = Vec2.add body.p body.v
+        | p = Vec2.add body.p v
         , v =
-            Vec2.add body.v a
-                -- Stokes' drag https://stackoverflow.com/a/667090
-                |> Vec2.add (Vec2.mul config.friction body.v)
+            -- Stokes' drag https://stackoverflow.com/a/667090
+            Vec2.sub a (Vec2.mul config.friction v)
+                |> Vec2.add v
         , cumulativeImpulse = Vec2.zero
         , cumulativeContact = Vec2.zero
     }
@@ -131,8 +137,9 @@ resolveContacts contacts bodies =
                                 newBody =
                                     if body.affectedByContact then
                                         resolveBodyVsWallContact contact_ body
-                                    else 
-                                        body 
+
+                                    else
+                                        body
                             in
                             accum
                                 |> Dict.insert id newBody
