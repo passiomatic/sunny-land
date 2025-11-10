@@ -20,8 +20,8 @@ import Vector2.Extra as Vec2
 {-| Scene global constants.
 -}
 config =
-    { friction = vec2 0.1 0 -- Friction with ground
-    , g = vec2 0 -190 -- Gravity
+    { friction = 0.9 -- Friction with ground
+    , g = vec2 0 -250 -- Gravity
     , viewScale = 3
     , viewWidth = 1000
     , viewHeight = 750
@@ -71,7 +71,7 @@ init level =
     , collectedGems = 0
     , score = 0
     , highScore = 10000
-    , debug = False
+    , debug = True
     , fx = None
     , notice = Empty
     , status = Intro
@@ -246,8 +246,7 @@ renderStatusBar memory =
             , renderText yellow ("High " ++ String.padLeft 5 '0' (String.fromInt (max memory.score memory.highScore)))
                 |> moveRight (config.viewWidth * 0.5 - 135)
             ]
-
-        --|> Diagnostic.consIf memory.debug (Diagnostic.entity player)
+            |> Diagnostic.consIf memory.debug (Diagnostic.entity player)
         Nothing ->
             []
     )

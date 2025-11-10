@@ -63,7 +63,7 @@ type Contact a
 
 
 step :
-    { b | friction : Vec2, g : Vec2 }
+    { b | friction : Float, g : Vec2 }
     -> Float
     -> List Wall
     -> Dict Int (PhysicsBody a)
@@ -90,7 +90,7 @@ fixedDeltaTime =
     1 / 60
 
 
-integrate : { b | friction : Vec2, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
+integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
     let
         a =
@@ -103,23 +103,40 @@ integrate config dt body =
                         Vec2.add Vec2.zero
                    )
 
-        v =
-            Vec2.scale (min fixedDeltaTime dt) body.v
+        damping = 
+            1.0 - config.friction * dt
     in
     { body
-        | p = Vec2.add body.p v
-        , v =
-            -- Stokes' drag https://stackoverflow.com/a/667090
-            Vec2.sub a (Vec2.mul config.friction v)
-                |> Vec2.add v
+        | p = Vec2.add body.p (Vec2.scale (min fixedDeltaTime dt) body.v)
+        , v = Vec2.add body.v (Vec2.scale (min fixedDeltaTime dt) a)
+            |> Vec2.mul (Vec2 damping 1 )   
         , cumulativeImpulse = Vec2.zero
         , cumulativeContact = Vec2.zero
     }
 
+-- integrateDrag : { b | friction : Vec2, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
+-- integrateDrag config dt body =
+--     let
+--         a =
+--             body.a
+--                 |> Vec2.add body.cumulativeImpulse
+--                 |> (if body.affectedByGravity then
+--                         Vec2.add config.g
 
+--                     else
+--                         Vec2.add Vec2.zero
+--                    )
 
--- iterate: List (Contact a) -> Dict Int (PhysicsBody a) -> Dict Int (PhysicsBody a)
--- iterate contacts entities =
+--         a2 = 
+--             Vec2.sub a (Vec2.mul config.friction body.v )
+--     in
+--     { body
+--         | p = Vec2.add body.p (Vec2.scale (min fixedDeltaTime dt) body.v)
+--         , v = Vec2.add body.v (Vec2.scale (min fixedDeltaTime dt) a2)
+--         , cumulativeImpulse = Vec2.zero
+--         , cumulativeContact = Vec2.zero
+--     }
+
 
 
 resolveContacts :
