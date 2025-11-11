@@ -206,15 +206,15 @@ renderPlayer time entity =
                     Sprites.heroHit entity.dir time
 
                 _ ->
-                    if entity.v.y > 0.2 && entity.cumulativeContact.y == 0 then
+                    if entity.v.y > 1 && entity.cumulativeContact.y == 0 then
                         -- Not touching the ground, jumping
                         Sprites.heroJump entity.dir
 
-                    else if entity.v.y < -0.2 && entity.cumulativeContact.y == 0 then
+                    else if entity.v.y < -1 && entity.cumulativeContact.y == 0 then
                         -- Not touching the ground, falling
                         Sprites.heroFall entity.dir
 
-                    else if entity.v.x > 0.2 || entity.v.x < -0.2 then
+                    else if entity.v.x > 4 || entity.v.x < -4 then
                         -- Running
                         Sprites.heroRun entity.dir time
 
@@ -574,19 +574,27 @@ update { keyboard, time } config memory =
                                     else
                                         0
 
-                                ( a, v ) =
+                                v = 
+                                    -- Stop horizontal movement when close to zero
+                                    if entity.v.x < 4 && entity.v.x > -4 then
+                                       Vec2.setX 0 entity.v
+
+                                    else
+                                        entity.v
+
+                                ( a, v2 ) =
                                     if keyboard.space && entity.cumulativeContact.y > 0.1 then
                                         -- On the ground, can jump
-                                        ( vec2 ax playerJump, Vec2.setY 0 entity.v )
+                                        ( vec2 ax playerJump, Vec2.setY 0 v )
 
                                     else
                                         -- On air, don't jump again
-                                        ( vec2 ax 0, entity.v )
+                                        ( vec2 ax 0, v )
                             in
                             Dict.insert id
                                 { entity
                                     | a = a
-                                    , v = v
+                                    , v = v2
                                     , dir = dir
                                 }
                                 accum
