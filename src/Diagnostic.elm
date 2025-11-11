@@ -45,18 +45,17 @@ segment color { p1, p2 } =
         |> move ((p1.x + p2.x) / 2) ((p1.y + p2.y) / 2)
         |> rotate angle
 
+maxArrowLength = 
+    200
 
 vector : Color -> Vec2 -> Shape
 vector color value =
     let
-        v =
-            Vec2.scale 20 value
-
         angle =
-            atan2 v.y v.x * 180 / pi
+            atan2 value.y value.x * 180 / pi
 
         width =
-            Vec2.length v
+            Vec2.length value
     in
     [ [ rectangle color width 3
       , circle color 5
@@ -69,7 +68,7 @@ vector color value =
                 |> moveRight (width / 2)
             )
         |> group
-        |> move (v.x / 2) (v.y / 2)
+        |> move (value.x / 2) (value.y / 2)
         |> rotate angle
     , words color (Vec2.toString value)
         |> moveDown 50
