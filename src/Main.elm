@@ -20,8 +20,8 @@ import Vector2.Extra as Vec2
 {-| Scene global constants.
 -}
 config =
-    { friction = 0.9 -- Friction with ground
-    , g = vec2 0 -250 -- Gravity
+    { friction = 2.9 -- Friction with ground
+    , g = vec2 0 -610 -- Gravity (px/s)
     , viewScale = 3
     , viewWidth = 1000
     , viewHeight = 750

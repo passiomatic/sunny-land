@@ -163,13 +163,13 @@ render time entities =
 {-| Player acceleration on ground (px/s).
 -}
 playerAcceleration =
-    180
+    370
 
 
 {-| Player jump vertical thrust (px/s).
 -}
 playerJump =
-    200
+    11700
 
 
 playerCategory =
@@ -575,7 +575,7 @@ update { keyboard, time } config memory =
                                         0
 
                                 ( a, v ) =
-                                    if keyboard.space && entity.cumulativeContact.y >= abs config.g.y then
+                                    if keyboard.space && entity.cumulativeContact.y > 0.1 then
                                         -- On the ground, can jump
                                         ( vec2 ax playerJump, Vec2.setY 0 entity.v )
 

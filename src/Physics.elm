@@ -92,6 +92,7 @@ integrate config dt body =
     let
         a =
             body.a
+                |> Vec2.add (Vec2.mul (Vec2 -config.friction 1) body.v)
                 |> Vec2.add body.cumulativeImpulse
                 |> (if body.affectedByGravity then
                         Vec2.add config.g
