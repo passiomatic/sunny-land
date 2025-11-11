@@ -160,13 +160,13 @@ render time entities =
 -- PLAYER
 
 
-{-| Player acceleration on ground.
+{-| Player acceleration on ground (px/s).
 -}
 playerAcceleration =
     180
 
 
-{-| Player jump vertical thrust.
+{-| Player jump vertical thrust (px/s).
 -}
 playerJump =
     200
@@ -227,6 +227,10 @@ renderPlayer time entity =
 
 
 -- ENEMIES
+
+
+opossumAcceleration =
+    90
 
 
 enemyCategory =
@@ -501,7 +505,7 @@ remove entity =
 
 {-| Figure out next status for each entity.
 -}
-update : Computer -> { b | g : Vec2 } -> { a | entities : Dict Int Entity } -> { a | entities : Dict Int Entity }
+update : Computer -> { b | friction: Float, g : Vec2 } -> { a | entities : Dict Int Entity } -> { a | entities : Dict Int Entity }
 update { keyboard, time } config memory =
     { memory
         | entities =
@@ -537,10 +541,10 @@ update { keyboard, time } config memory =
                                 ax =
                                     case newDir of
                                         East ->
-                                            90
+                                            opossumAcceleration
 
                                         West ->
-                                            -90
+                                            -opossumAcceleration
 
                                         _ ->
                                             0

@@ -86,9 +86,6 @@ step config dt walls bodies =
     ( resolveContacts contacts newBodies, contacts )
 
 
-fixedDeltaTime =
-    1 / 60
-
 
 integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
@@ -102,14 +99,10 @@ integrate config dt body =
                     else
                         Vec2.add Vec2.zero
                    )
-
-        damping = 
-            1.0 - config.friction * dt
     in
     { body
-        | p = Vec2.add body.p (Vec2.scale (min fixedDeltaTime dt) body.v)
-        , v = Vec2.add body.v (Vec2.scale (min fixedDeltaTime dt) a)
-            |> Vec2.mul (Vec2 damping 1 )   
+        | p = Vec2.add body.p (Vec2.scale dt body.v)
+        , v = Vec2.add body.v (Vec2.scale dt a)
         , cumulativeImpulse = Vec2.zero
         , cumulativeContact = Vec2.zero
     }

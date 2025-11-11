@@ -142,22 +142,23 @@ view computer ({ debug, camera, entities } as memory) =
         EndLevel level timeout ->
             let
                 status =
-                        renderStatusBar memory
+                    renderStatusBar memory
+
                 world =
                     renderPhysicsGeometry debug level.walls entities
                         :: rectangle config.background computer.screen.width computer.screen.height
                         :: Entity.render computer.time entities
                         |> group
                         |> move (-camera.x * config.viewScale) -(camera.y * config.viewScale)
-                        |> scale config.viewScale            
+                        |> scale config.viewScale
             in
-                world
-                    :: status
-                    :: renderMask computer memory
-                    :: renderFx computer memory
-                    :: renderNotice memory
-                    :: []
-                            
+            world
+                :: status
+                :: renderMask computer memory
+                :: renderFx computer memory
+                :: renderNotice memory
+                :: []
+
         Intro ->
             let
                 titles =
@@ -246,7 +247,8 @@ renderStatusBar memory =
             , renderText yellow ("High " ++ String.padLeft 5 '0' (String.fromInt (max memory.score memory.highScore)))
                 |> moveRight (config.viewWidth * 0.5 - 135)
             ]
-            |> Diagnostic.consIf memory.debug (Diagnostic.entity player)
+                |> Diagnostic.consIf memory.debug (Diagnostic.entity player)
+
         Nothing ->
             []
     )
@@ -377,11 +379,16 @@ renderFx computer memory =
 -- UPDATE
 
 
+fixedDeltaTime =
+    1 / 60
+
+
 update : Computer -> Memory -> Memory
 update computer memory =
     let
+        -- Semi-fixed timestep from https://gafferongames.com/post/fix_your_timestep/
         dt =
-            toFloat computer.time.delta / 1000
+            min fixedDeltaTime (toFloat computer.time.delta / 1000)
     in
     case memory.status of
         Playing level ->
@@ -396,17 +403,18 @@ update computer memory =
         EndLevel level timeout ->
             let
                 remaining =
-                        timeout - computer.time.delta
+                    timeout - computer.time.delta
             in
-            if remaining > 0 then 
+            if remaining > 0 then
                 memory
                     |> setStatus (EndLevel level remaining)
                     |> Entity.update computer config
                     |> simulate dt level.walls
                     |> updateCamera dt
                     |> updateNotice computer
-            else 
-                changeLevel Levels.level1 memory 
+
+            else
+                changeLevel Levels.level1 memory
 
         Intro ->
             if computer.keyboard.enter then
@@ -469,40 +477,47 @@ updateNotice computer memory =
                     Empty
     }
 
-{-| Check for the two end level scenarios: 
-    
+
+{-| Check for the two end level scenarios:
+
     1. player collected all the gems
     2. player got killed by enemy
+
 -}
-checkForEndLevel memory = 
+checkForEndLevel memory =
     case Entity.getPlayer memory.entities of
         Just player ->
             case player.status of
                 Normal ->
                     if memory.collectedGems == totalGems then
-                        -- Player won, show end level graphics                        
-                        { memory | 
-                            notice = Notice "Level 1 cleared!" 2000
+                        -- Player won, show end level graphics
+                        { memory
+                            | notice = Notice "Level 1 cleared!" 2000
                         }
                             |> setStatus (EndLevel Levels.level1 4000)
-                    else 
+
+                    else
                         memory
 
                 Removing timeout ->
                     if timeout > 0 then
-                        memory 
+                        memory
+
                     else
-                        -- Player died, game over  
-                        { memory | score = 0 }      
+                        -- Player died, game over
+                        { memory | score = 0 }
                             |> setStatus Intro
+
                 _ ->
                     memory
 
         Nothing ->
             memory
 
-setStatus status memory = 
-    { memory | status = status } 
+
+setStatus status memory =
+    { memory | status = status }
+
 
 {-| Simulate physics and respond to entity contacts.
 -}
