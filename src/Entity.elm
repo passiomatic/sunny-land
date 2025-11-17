@@ -574,27 +574,19 @@ update { keyboard, time } config memory =
                                     else
                                         0
 
-                                v = 
-                                    -- Stop horizontal movement when close to zero
-                                    if entity.v.x < 4 && entity.v.x > -4 then
-                                       Vec2.setX 0 entity.v
-
-                                    else
-                                        entity.v
-
-                                ( a, v2 ) =
+                                ( a, v ) =
                                     if keyboard.space && entity.cumulativeContact.y > 0.1 then
                                         -- On the ground, can jump
-                                        ( vec2 ax playerJump, Vec2.setY 0 v )
+                                        ( vec2 ax playerJump, Vec2.setY 0 entity.v )
 
                                     else
                                         -- On air, don't jump again
-                                        ( vec2 ax 0, v )
+                                        ( vec2 ax 0, entity.v )
                             in
                             Dict.insert id
                                 { entity
                                     | a = a
-                                    , v = v2
+                                    , v = v
                                     , dir = dir
                                 }
                                 accum

@@ -86,6 +86,8 @@ step config dt walls bodies =
     ( resolveContacts contacts newBodies, contacts )
 
 
+stopThreshold = 
+    4
 
 integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
@@ -100,37 +102,21 @@ integrate config dt body =
                     else
                         Vec2.add Vec2.zero
                    )
+
+        v = 
+            -- Stop horizontal movement when under threshold
+            if body.v.x < stopThreshold && body.v.x > -stopThreshold then
+                Vec2.setX 0 body.v
+
+            else
+                body.v                   
     in
     { body
-        | p = Vec2.add body.p (Vec2.scale dt body.v)
-        , v = Vec2.add body.v (Vec2.scale dt a)
+        | p = Vec2.add body.p (Vec2.scale dt v)
+        , v = Vec2.add v (Vec2.scale dt a)
         , cumulativeImpulse = Vec2.zero
         , cumulativeContact = Vec2.zero
     }
-
--- integrateDrag : { b | friction : Vec2, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
--- integrateDrag config dt body =
---     let
---         a =
---             body.a
---                 |> Vec2.add body.cumulativeImpulse
---                 |> (if body.affectedByGravity then
---                         Vec2.add config.g
-
---                     else
---                         Vec2.add Vec2.zero
---                    )
-
---         a2 = 
---             Vec2.sub a (Vec2.mul config.friction body.v )
---     in
---     { body
---         | p = Vec2.add body.p (Vec2.scale (min fixedDeltaTime dt) body.v)
---         , v = Vec2.add body.v (Vec2.scale (min fixedDeltaTime dt) a2)
---         , cumulativeImpulse = Vec2.zero
---         , cumulativeContact = Vec2.zero
---     }
-
 
 
 resolveContacts :
