@@ -89,12 +89,22 @@ step config dt walls bodies =
 stopThreshold = 
     4
 
+one = 
+    Vec2 1 1
+
 integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
     let
+        drag = 
+            -- When not accelarating, apply drag to stop entity smoothly
+            if body.a.x < 0.1 && body.a.x > -0.1 then
+                Vec2 -config.friction 1
+            else
+                one
+
         a =
             body.a
-                |> Vec2.add (Vec2.mul (Vec2 -config.friction 1) body.v)
+                |> Vec2.add (Vec2.mul drag body.v)
                 |> Vec2.add body.cumulativeImpulse
                 |> (if body.affectedByGravity then
                         Vec2.add config.g
