@@ -86,25 +86,15 @@ step config dt walls bodies =
     ( resolveContacts contacts newBodies, contacts )
 
 
-stopThreshold = 
+stopThreshold =
     4
 
-one = 
-    Vec2 1 1
 
 integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
     let
-        drag = 
-            -- When not accelarating, apply drag to stop entity smoothly
-            if body.a.x < 0.1 && body.a.x > -0.1 then
-                Vec2 -config.friction 1
-            else
-                one
-
         a =
             body.a
-                |> Vec2.add (Vec2.mul drag body.v)
                 |> Vec2.add body.cumulativeImpulse
                 |> (if body.affectedByGravity then
                         Vec2.add config.g
@@ -113,20 +103,48 @@ integrate config dt body =
                         Vec2.add Vec2.zero
                    )
 
-        v = 
-            -- Stop horizontal movement when under threshold
-            if body.v.x < stopThreshold && body.v.x > -stopThreshold then
-                Vec2.setX 0 body.v
+        vx =
+            computeVelocity body.v.x a.x config.friction dt
 
-            else
-                body.v                   
+        vy =
+            computeVelocity body.v.y a.y 0 dt
+
+        newVelocity =
+            Vec2.vec2 vx vy
     in
     { body
-        | p = Vec2.add body.p (Vec2.scale dt v)
-        , v = Vec2.add v (Vec2.scale dt a)
+        | p = Vec2.add body.p (Vec2.scale dt newVelocity)
+        , v = newVelocity
         , cumulativeImpulse = Vec2.zero
         , cumulativeContact = Vec2.zero
     }
+
+
+computeVelocity : Float -> Float -> Float -> Float -> Float
+computeVelocity velocity acceleration drag dt =
+    let
+        newVelocity =
+            if acceleration /= 0 then
+                velocity + acceleration * dt
+
+            else if drag /= 0 then
+                let
+                    d =
+                        drag * dt
+                in
+                if velocity - d > 0 then
+                    velocity - d
+
+                else if velocity + d < 0 then
+                    velocity + d
+
+                else
+                    0
+
+            else
+                velocity
+    in
+    newVelocity
 
 
 resolveContacts :
