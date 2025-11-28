@@ -163,13 +163,13 @@ render time entities =
 {-| Player acceleration on ground (px/s).
 -}
 playerAcceleration =
-    190
+    270
 
 
 {-| Player jump vertical thrust (px/s).
 -}
 playerJump =
-    13000
+    13500
 
 
 playerCategory =

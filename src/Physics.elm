@@ -18,6 +18,9 @@ Original C++ sources are available on Github at:
 About stability "Slops":
 <http://allenchou.net/2014/01/game-physics-stability-slops/>
 
+Flixel's computeVelocity:
+<https://github.com/HaxeFlixel/flixel/blob/6f4f86bb400c0018d846ccbece05cf8bfd398fa6/flixel/math/FlxVelocity.hx#L232>
+
 -}
 
 import AltMath.Vector2 as Vec2 exposing (Vec2, vec2)
@@ -89,7 +92,8 @@ step config dt walls bodies =
 stopThreshold =
     4
 
-
+maxVelocity =
+    150
 integrate : { b | friction : Float, g : Vec2 } -> Float -> PhysicsBody a -> PhysicsBody a
 integrate config dt body =
     let
@@ -104,10 +108,10 @@ integrate config dt body =
                    )
 
         vx =
-            computeVelocity body.v.x a.x config.friction dt
+            computeVelocity body.v.x a.x config.friction maxVelocity dt
 
         vy =
-            computeVelocity body.v.y a.y 0 dt
+            computeVelocity body.v.y a.y 0 0 dt
 
         newVelocity =
             Vec2.vec2 vx vy
@@ -120,8 +124,8 @@ integrate config dt body =
     }
 
 
-computeVelocity : Float -> Float -> Float -> Float -> Float
-computeVelocity velocity acceleration drag dt =
+computeVelocity : Float -> Float -> Float -> Float -> Float -> Float 
+computeVelocity velocity acceleration drag max dt =
     let
         newVelocity =
             if acceleration /= 0 then
@@ -144,7 +148,11 @@ computeVelocity velocity acceleration drag dt =
             else
                 velocity
     in
-    newVelocity
+    if max > 0 then
+        clamp -max max newVelocity
+
+    else
+        newVelocity
 
 
 resolveContacts :
