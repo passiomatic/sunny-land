@@ -5,6 +5,7 @@ module Camera exposing
     )
 
 import AltMath.Vector2 as Vec2 exposing (Vec2, vec2)
+import Vector2.Extra as Vec2
 
 
 type alias Camera =
@@ -16,7 +17,7 @@ minDistanceFromEdge =
 
 
 cameraSpeed =
-    1.5
+    150
 
 
 init : Vec2 -> Camera
@@ -51,9 +52,12 @@ follow { viewWidth, viewHeight, viewScale } dt target camera =
             else
                 camera.y
 
-        t =
-            Vec2.sub (vec2 newX newY) camera
-                |> Vec2.scale (dt * cameraSpeed)
     in
-    -- Move camera to new position along t vector
-    Vec2.add camera t
+    if newX /= camera.x || newY /= camera.y then
+        -- Move camera to new position
+        Vec2.direction (vec2 newX newY) camera
+            |> Vec2.scale (dt * cameraSpeed)
+            |> Vec2.add camera
+
+    else
+        camera
